@@ -1,7 +1,7 @@
 const Course = require('../models/courseModel');
 const Category = require('../models/categoryModel');
 const User = require('../models/userModel');
-const { uploadImageToColudinary } = require('../utils/imageUploader');
+const { uploadDataToColudinary } = require('../utils/imageUploader');
 
 const createCourse = async (req, res) => {
   try {
@@ -10,6 +10,7 @@ const createCourse = async (req, res) => {
       courseDescription,
       whatYouWillLearn,
       price,
+      tag,
       category
     } = req.body;
 
@@ -21,7 +22,8 @@ const createCourse = async (req, res) => {
       !whatYouWillLearn ||
       !price ||
       !category ||
-      !thumbnail
+      !thumbnail ||
+      !tag
     ) {
       res.status(400).json({
         status: 'fail',
@@ -48,7 +50,7 @@ const createCourse = async (req, res) => {
       });
     }
 
-    const thumbnailImage = await uploadImageToColudinary(
+    const thumbnailImage = await uploadDataToColudinary(
       thumbnail,
       process.env.FOLDER_NAME
     );
@@ -59,6 +61,7 @@ const createCourse = async (req, res) => {
       instructor: instructorDetails._id,
       whatYouWillLearn,
       price,
+      tag,
       category: categoryDetails._id,
       thumbnail: thumbnailImage.secure_url
     });
