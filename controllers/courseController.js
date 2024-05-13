@@ -1,9 +1,9 @@
 const Course = require('../models/courseModel');
 const Category = require('../models/categoryModel');
 const User = require('../models/userModel');
-const { uploadDataToColudinary } = require('../utils/imageUploader');
+const { uploadDataToColudinary } = require('../utils/uplaodData');
 
-const createCourse = async (req, res) => {
+exports.createCourse = async (req, res) => {
   try {
     const {
       courseName,
@@ -89,7 +89,7 @@ const createCourse = async (req, res) => {
   }
 };
 
-const showAllCourses = async (req, res) => {
+exports.getAllCourses = async (req, res) => {
   try {
     const allCourses = await Course.find();
     // const allCourses = await Course.find(
@@ -117,6 +117,48 @@ const showAllCourses = async (req, res) => {
     res.status(500).json({
       status: 'fail',
       message: 'Something went wrong while fetching all courses',
+      data: err.message
+    });
+  }
+};
+
+exports.getCourseDetails = async (req, res) => {
+  try {
+    const courseId = req.body;
+
+    const courseDetails = await Course.find({ _id: courseId })
+      .populate({
+        path: 'instructor',
+        populate: {
+          path: 'additionalDetails'
+        }
+      })
+      .populate('category')
+      .populate('ratingAndReviews')
+      .populate({
+        path: 'courseContent',
+        populate: {
+          path: 'subSection'
+        }
+      })
+      .exec();
+
+    if (!courseDetails) {
+      res.status(400).json({
+        status: 'fail',
+
+        message: `Could not find the course with ${courseId}`
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: { courseDetails }
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'fail',
+      message: 'Something went wrong while fetching course details',
       data: err.message
     });
   }
