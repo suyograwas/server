@@ -1,5 +1,6 @@
 const Profile = require('../models/profileModel');
 const User = require('../models/userModel');
+const { uploadDataToColudinary } = require('../utils/uploadData');
 
 exports.updateProfile = async (req, res) => {
   try {
@@ -7,16 +8,16 @@ exports.updateProfile = async (req, res) => {
 
     const id = req.user.id;
 
-    if (!contactNumber || !gender) {
+    if (!gender) {
       res.status(500).json({
         status: 'fail',
         message: 'All fields are required '
       });
     }
 
-    const userDetails = await User.findById({ id });
+    const userDetails = await User.findById(id);
     const profileId = userDetails.additionalDetails;
-    const profileDetails = await Profile.findById({ profileId });
+    const profileDetails = await Profile.findById(profileId);
 
     profileDetails.dateOfBirth = dateOfBirth;
     profileDetails.about = about;
@@ -42,11 +43,11 @@ exports.updateProfile = async (req, res) => {
 
 exports.deleteAccount = async (req, res) => {
   try {
-    const id = req.body.id;
+    const id = req.user.id;
     const userDetails = await User.findById(id);
 
     if (!userDetails) {
-      res.status(500).json({
+      return res.status(500).json({
         status: 'fail',
         message: ' User not Found '
       });
@@ -58,12 +59,12 @@ exports.deleteAccount = async (req, res) => {
 
     await User.findByIdAndDelete(id);
 
-    res.status(200).json({
+    return res.status(200).json({
       status: 'success',
       message: 'User Deleted successfully'
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       status: 'fail',
       message: 'Something went wrong while deleting user account',
       data: err.message
@@ -73,10 +74,12 @@ exports.deleteAccount = async (req, res) => {
 
 exports.getAllUserDetails = async (req, res) => {
   try {
-    const id = req.body.id;
+    const id = req.user.id;
+
+    console.log('id  ', id);
 
     const userDetails = await User.findById(id)
-      .populate('AdditionalDetails')
+      .populate('additionalDetails')
       .exec();
 
     res.status(200).json({
@@ -99,13 +102,13 @@ exports.updateDisplayPicture = async (req, res) => {
   try {
     const displayPicture = req.files.displayPicture;
     const userId = req.user.id;
-    const image = await uploadImageToCloudinary(
+    const image = await uploadDataToColudinary(
       displayPicture,
       process.env.FOLDER_NAME,
       1000,
       1000
     );
-    console.log(image);
+    console.log('image data :', image);
     const updatedProfile = await User.findByIdAndUpdate(
       { _id: userId },
       { image: image.secure_url },
@@ -114,7 +117,9 @@ exports.updateDisplayPicture = async (req, res) => {
     res.send({
       success: true,
       message: `Image Updated successfully`,
-      data: updatedProfile
+      data: {
+        updatedProfile
+      }
     });
   } catch (error) {
     return res.status(500).json({

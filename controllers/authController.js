@@ -4,15 +4,16 @@ const jwt = require('jsonwebtoken');
 const Profile = require('../models/profileModel');
 const User = require('../models/userModel');
 const OTP = require('../models/otpModel');
+const { passwordUpdated } = require('../mail/templates/passwordUpdate');
 
 require('dotenv').config();
 
 exports.sendOTP = async (req, res) => {
   try {
-    const { email } = req.body();
+    const { email } = req.body;
 
-    const checkUserPrest = await User.findOne({ email });
-    if (checkUserPrest) {
+    const checkUserPresent = await User.findOne({ email });
+    if (checkUserPresent) {
       return res.status(401).json({
         status: 'fail',
         message: 'User is already registered.'
@@ -51,7 +52,7 @@ exports.sendOTP = async (req, res) => {
       }
     });
   } catch (err) {
-    console.log('error while creating otp....');
+    console.log('Error while creating otp....');
     res.status().json({
       status: 'fail',
       message: err.message
@@ -115,12 +116,12 @@ exports.signUp = async (req, res) => {
     console.log('most recent otp is a :', recentOtp);
 
     if (recentOtp.length == 0) {
-      res.status(400).json({
+      return res.status(400).json({
         status: 'fail',
         message: 'Otp not found, please try again.'
       });
-    } else if (otp != recentOtp.otp) {
-      res.status(400).json({
+    } else if (otp != recentOtp[0].otp) {
+      return res.status(400).json({
         status: 'fail',
         message: 'Invalid OTP, please try again.'
       });
@@ -146,7 +147,7 @@ exports.signUp = async (req, res) => {
       image: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName}${lastName}`
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       status: 'success',
       data: {
         user
@@ -154,7 +155,7 @@ exports.signUp = async (req, res) => {
     });
   } catch (err) {
     console.log('Error while signing up the user.');
-    res.status(400).json({
+    return res.status(400).json({
       status: 'fail',
       message: err.message
     });
@@ -166,19 +167,22 @@ exports.signUp = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log(email, password);
 
     if (!email || !password) {
-      res.status(403).json({
+      return res.status(403).json({
         status: 'fail',
         message: 'All fields are required, please try again'
       });
     }
 
     // user check exist or not
-    const user = await User.findOne({ email }).populate('additionalDetails');
+    const user = await User.findOne({ email })
+      .populate('additionalDetails')
+      .exec();
 
     if (!user) {
-      res.status(401).json({
+      return res.status(401).json({
         status: 'fail',
         message: 'Users are not registered. Please sign up first'
       });
@@ -190,6 +194,7 @@ exports.login = async (req, res) => {
         email: user.email,
         accountType: user.accountType
       };
+
       const token = jwt.sign(payload, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRES_IN
       });
@@ -213,7 +218,7 @@ exports.login = async (req, res) => {
           }
         });
     } else {
-      res.status(401).json({
+      return res.status(401).json({
         status: 'fail',
         message: 'The password is incorrect.'
       });
@@ -224,7 +229,7 @@ exports.login = async (req, res) => {
     console.log(
       'Error while logging in. Please check your username and password.'
     );
-    res.status(500).json({
+    return res.status(500).json({
       status: 'fail',
       message: err.message
     });

@@ -16,11 +16,7 @@ exports.createSection = async (req, res) => {
 
     const updatedCourse = await Course.findByIdAndUpdate(
       courseId,
-      {
-        $push: {
-          courseContent: newSection._id
-        }
-      },
+      { $push: { courseContent: newSection._id } },
       { new: true }
     )
       .populate({
@@ -35,7 +31,7 @@ exports.createSection = async (req, res) => {
       status: 'success',
       message: 'section is created successfully',
       data: {
-        updatedCourseDetails
+        updatedCourse
       }
     });
   } catch (err) {
@@ -52,19 +48,19 @@ exports.updateSection = async (req, res) => {
     const { sectionName, sectionId } = req.body;
 
     if (!sectionName || !sectionId) {
-      res.status(500).res({
+      return res.status(500).res({
         status: 'fail',
         message: 'SectionID or section name is missing'
       });
     }
 
     const section = await Section.findByIdAndUpdate(
-      sectionId,
+      { _id: sectionId },
       { sectionName },
       { new: true }
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       status: 'success',
       message: 'section is updated successfully',
       data: {
@@ -72,7 +68,7 @@ exports.updateSection = async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       status: 'fail',
       message: 'Something went wrong while updating section',
       data: err.message
@@ -83,15 +79,16 @@ exports.updateSection = async (req, res) => {
 exports.deleteSection = async (req, res) => {
   try {
     const { sectionId } = req.params;
+    //const { sectionId } = req.body;
 
-    await Section.findByIdAndDelete({ sectionId });
+    await Section.findByIdAndDelete(sectionId);
     // also delete the section id from course id
-    res.status(200).json({
+    return res.status(200).json({
       status: 'success',
       message: 'section is deleted  successfully'
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       status: 'fail',
       message: 'Something went wrong while deleting section',
       data: err.message

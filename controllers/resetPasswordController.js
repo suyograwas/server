@@ -1,13 +1,14 @@
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const User = require('../models/userModel');
 const mailSender = require('../utils/mailSender');
 require('dotenv').config();
 
 exports.resetPasswordToken = async (req, res) => {
   try {
-    const { email } = req.body.email;
+    const email = req.body.email;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email });
 
     if (!user) {
       res.status(404).json({
@@ -16,7 +17,7 @@ exports.resetPasswordToken = async (req, res) => {
       });
     }
 
-    const token = crypto.randomUUID;
+    const token = crypto.randomBytes(20).toString('hex');
 
     const updateDetails = await User.findOneAndUpdate(
       { email },

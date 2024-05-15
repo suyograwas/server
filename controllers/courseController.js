@@ -1,17 +1,21 @@
 const Course = require('../models/courseModel');
 const Category = require('../models/categoryModel');
 const User = require('../models/userModel');
-const { uploadDataToColudinary } = require('../utils/uplaodData');
+const { uploadDataToColudinary } = require('../utils/uploadData');
 
 exports.createCourse = async (req, res) => {
   try {
-    const {
+    const userId = req.user.id;
+
+    let {
       courseName,
       courseDescription,
       whatYouWillLearn,
       price,
       tag,
-      category
+      category,
+      status,
+      instructions
     } = req.body;
 
     const thumbnail = req.files.thumbnailImage;
@@ -25,18 +29,20 @@ exports.createCourse = async (req, res) => {
       !thumbnail ||
       !tag
     ) {
-      res.status(400).json({
+      return res.status(400).json({
         status: 'fail',
         message: 'All fields are required'
       });
     }
 
-    const userId = req.user.id;
-    const instructorDetails = await User.findById({ userId });
+    const instructorDetails = await User.findById(userId, {
+      accountType: 'Instructor'
+    });
+
     console.log('instructor Details are :', instructorDetails);
 
     if (!instructorDetails) {
-      res.status(400).json({
+      return res.status(400).json({
         status: 'fail',
         message: 'Instructor details are not found'
       });
@@ -44,7 +50,7 @@ exports.createCourse = async (req, res) => {
 
     const categoryDetails = await Category.findById(category);
     if (!categoryDetails) {
-      res.status(400).json({
+      return res.status(400).json({
         status: 'fail',
         message: 'Category details are not found'
       });
@@ -63,7 +69,9 @@ exports.createCourse = async (req, res) => {
       price,
       tag,
       category: categoryDetails._id,
-      thumbnail: thumbnailImage.secure_url
+      thumbnail: thumbnailImage.secure_url,
+      status: status,
+      instructions: instructions
     });
 
     await User.findByIdAndUpdate(
@@ -72,10 +80,20 @@ exports.createCourse = async (req, res) => {
       { new: true }
     );
 
+    await Category.findByIdAndUpdate(
+      { _id: category },
+      {
+        $push: {
+          course: newCourse._id
+        }
+      },
+      { new: true }
+    );
+
     // update Tags Schema
     //homeWork
 
-    res.status(200).json({
+    return res.status(200).json({
       status: 'success',
       message: 'Course Created Successfully',
       data: { newCourse }
@@ -124,7 +142,7 @@ exports.getAllCourses = async (req, res) => {
 
 exports.getCourseDetails = async (req, res) => {
   try {
-    const courseId = req.body;
+    const { courseId } = req.body;
 
     const courseDetails = await Course.find({ _id: courseId })
       .populate({

@@ -1,13 +1,13 @@
 const SubSection = require('../models/subSectionModel');
 const Section = require('../models/sectionModel');
-const { uploadDataToCloudinary } = require('../utils/uplaodData');
+const { uploadDataToColudinary } = require('../utils/uploadData');
 require('dotenv').config();
 
 exports.createSubSection = async (req, res) => {
   try {
     const { sectionId, title, timeDuration, description } = req.body;
 
-    const video = req.file.videoFile;
+    const video = req.files.video;
 
     if (!sectionId || !title || !timeDuration || !description || !video) {
       res.status(500).json({
@@ -16,7 +16,7 @@ exports.createSubSection = async (req, res) => {
       });
     }
 
-    const uploadDetails = await uploadDataToCloudinary(
+    const uploadDetails = await uploadDataToColudinary(
       video,
       process.env.FOLDER_NAME
     );
@@ -29,15 +29,11 @@ exports.createSubSection = async (req, res) => {
     });
 
     const updatedSection = await Section.findByIdAndUpdate(
-      sectionId,
-      {
-        $push: {
-          subSection: subsectionDetails._id
-        }
-      },
+      { _id: sectionId },
+      { $push: { subSection: subsectionDetails._id } },
       { new: true }
     )
-      .populate('SubSection')
+      .populate('subSection')
       .exec();
 
     res.status(200).json({
